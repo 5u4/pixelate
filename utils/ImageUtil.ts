@@ -13,7 +13,8 @@ export class ImageUtil {
     height?: number
   ) {
     const { canvas, ctx } = this.makeCanvasContext();
-    if (img.width === 0) return new ImageData(width || 1, height || 1);
+    if (img.width === 0 || img.height === 0)
+      return new ImageData(width || 1, height || 1);
     canvas.width = width || img.width;
     canvas.height = height || img.height;
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
