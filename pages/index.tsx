@@ -8,7 +8,7 @@ export const index: React.FC = () => {
   const source = useSourceValue();
 
   return (
-    <div className="container flex flex-col items-center mx-auto">
+    <div className="container flex flex-col items-center mx-auto mb-24">
       <Title />
       {source === undefined ? <Uploader /> : <Pixelater />}
     </div>
