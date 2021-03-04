@@ -10,6 +10,7 @@ export const Pixelater: React.FC = () => {
   const source = useSourceValue();
   const [blockSize, setBlockSize] = useState(1);
   const [pixelateSrc, setPixelateSrc] = useState("");
+  const [imgCache, setImgCache] = useState<{ [_: number]: string }>({});
   const [dimension, setDimension] = useState<{ w: number; h: number }>({
     w: 0,
     h: 0,
@@ -17,16 +18,19 @@ export const Pixelater: React.FC = () => {
 
   const onBlockSizeChange = useCallback(
     (v: number) => {
+      setBlockSize(v);
+      if (v in imgCache) return setPixelateSrc(imgCache[v]);
       if (!origImgRef.current) return;
       const img = origImgRef.current;
       const imgUtil = ImageUtil.instance;
       const { w, h } = dimension;
       const data = imgUtil.getImageDataFromElement(img, w, h);
       imgUtil.pixelate(data, v);
-      setBlockSize(v);
-      setPixelateSrc(imgUtil.getSrcFromImageData(data));
+      var src = imgUtil.getSrcFromImageData(data);
+      setPixelateSrc(src);
+      setImgCache({ ...imgCache, [v]: src });
     },
-    [origImgRef, dimension, setBlockSize, setPixelateSrc]
+    [origImgRef, dimension, setBlockSize, setPixelateSrc, imgCache, setImgCache]
   );
 
   const onOrigImgLoad = useCallback(() => {
