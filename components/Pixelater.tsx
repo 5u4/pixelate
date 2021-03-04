@@ -1,48 +1,44 @@
-import React, { useCallback, useLayoutEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { useSourceValue } from "../store/source";
 import { ImageUtil } from "../utils/ImageUtil";
 import { NewUploadButton } from "./NewUploadButton";
 import { NumberInput } from "./NumberInput";
 import { Slider } from "./Slider";
 
-const MIN_MAX_BLOCK_SIZE = 16;
-const MIN_RES_DIM = 16;
-
 export const Pixelater: React.FC = () => {
   const origImgRef = useRef<HTMLImageElement>(null);
   const source = useSourceValue();
   const [blockSize, setBlockSize] = useState(1);
   const [pixelateSrc, setPixelateSrc] = useState("");
-  const [maxBlockSize, setMaxBlockSize] = useState(MIN_MAX_BLOCK_SIZE);
+  const [dimension, setDimension] = useState<{ w: number; h: number }>({
+    w: 0,
+    h: 0,
+  });
 
   const onBlockSizeChange = useCallback(
     (v: number) => {
       if (!origImgRef.current) return;
       const img = origImgRef.current;
       const imgUtil = ImageUtil.instance;
-      const data = imgUtil.getImageDataFromElement(img);
+      const { w, h } = dimension;
+      const data = imgUtil.getImageDataFromElement(img, w, h);
       imgUtil.pixelate(data, v);
       setBlockSize(v);
       setPixelateSrc(imgUtil.getSrcFromImageData(data));
     },
-    [origImgRef, setBlockSize, setPixelateSrc]
+    [origImgRef, dimension, setBlockSize, setPixelateSrc]
   );
 
-  const handleMaxBlockSize = useCallback(() => {
-    if (!origImgRef.current) return setMaxBlockSize(MIN_MAX_BLOCK_SIZE);
-    const dim = Math.min(origImgRef.current.width, origImgRef.current.height);
-    const res = Math.floor(dim / MIN_RES_DIM);
-    setMaxBlockSize(res < MIN_MAX_BLOCK_SIZE ? MIN_MAX_BLOCK_SIZE : res);
-  }, [origImgRef, setMaxBlockSize]);
-
-  useLayoutEffect(() => {
-    addEventListener("resize", handleMaxBlockSize);
-    return () => removeEventListener("resize", handleMaxBlockSize);
-  }, []);
+  const onOrigImgLoad = useCallback(() => {
+    if (!origImgRef.current) return;
+    const img = origImgRef.current;
+    if (img.clientWidth !== 0 && img.clientHeight !== 0)
+      setDimension({ w: img.clientWidth, h: img.clientHeight });
+  }, [origImgRef]);
 
   return (
     <div>
-      <div className="shadow-lg rounded-2xl p-4 border-red-200 border-4 mx-2 my-4 w-80 md:w-128 sm:w-96">
+      <div className="shadow-lg rounded-2xl p-4 border-red-200 border-4 mx-2 my-4 md:w-128 sm:w-96 w-80">
         <img
           className="w-full h-full"
           ref={origImgRef}
@@ -50,12 +46,12 @@ export const Pixelater: React.FC = () => {
           style={{
             display: blockSize !== 1 ? "none" : "block",
           }}
-          onLoad={handleMaxBlockSize}
+          onLoad={onOrigImgLoad}
         />
         {blockSize > 1 && (
           <img
             className="w-full h-full"
-            style={{ display: "block" }}
+            style={{ display: blockSize === 1 ? "none" : "block" }}
             src={pixelateSrc}
           />
         )}
@@ -66,17 +62,9 @@ export const Pixelater: React.FC = () => {
           <span className="md:text-2xl text-xl mr-1 font-semibold tracking-tight md:tracking-tighter leading-tight">
             Block Size:
           </span>
-          <NumberInput
-            value={blockSize}
-            onChange={onBlockSizeChange}
-            max={maxBlockSize}
-          />
+          <NumberInput value={blockSize} onChange={onBlockSizeChange} />
         </div>
-        <Slider
-          value={blockSize}
-          onChange={onBlockSizeChange}
-          max={maxBlockSize}
-        />
+        <Slider value={blockSize} onChange={onBlockSizeChange} />
       </div>
 
       <div className="mt-6">
